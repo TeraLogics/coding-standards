@@ -47,7 +47,7 @@ provide examples of how such constructs should be used in practice.
 ## **General**
 These are the general standards and practices that apply, more or less, across the board for most of our applications.
 
-Check out the [CHANGELOG](/TeraLogics/coding-standards/blob/master/CHANGELOG.md) to see what's new and what has been changed. 
+Check out the [CHANGELOG](https://github.com/TeraLogics/coding-standards/blob/master/CHANGELOG.md) to see what's new and what has been changed. 
 
 ### **Header Comment**
 The first line of each file **MUST** be the copyright header comment. See [Copyright Header](https://github.com/TeraLogics/coding-standards/blob/master/copyright-header.md) for examples of appropriate format in

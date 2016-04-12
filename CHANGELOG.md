@@ -2,6 +2,18 @@
 
 [Back to **Coding Standards and Practices**](https://github.com/TeraLogics/coding-standards/blob/master/coding-standards.md)
 
+## 2016-04-12
+* Added **Private Functions In Modules**.
+* Renamed **Using `require` In Node** to **Using `require` In Node.js**.
+* Updated **`use strict`**.
+  * Removed the first sentence with **SHOULD** to simplify and clarify the intention.
+* Updated **Promise Structure**.
+  * Changed "Promises **MUST NOT** be structured in this way." to "Promises **SHOULD NOT** be structured in this way." to explicitly allow for more flexibility in promise structuring.
+* Updated **Route Parameters and Query Parameters**.
+  * Added missing require for `validation`.
+* Updated **DAL** Layer.
+  * Added missing require for `validation`.
+
 ## 2016-04-01
 * Updated **Promise Structure**.
   * Added a section on conditionally executed subordinate promise chains.

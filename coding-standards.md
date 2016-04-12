@@ -17,10 +17,11 @@ provide examples of how such constructs should be used in practice.
    1. [Truthy and Falsy](#truthy-and-falsy)
       1. [Casting To Boolean With `!!` and `!`](#casting-to-boolean-with-and-)
    1. [Identifier Naming](#identifier-naming)
+      1. [Private Functions In Modules](#private-functions-in-modules)
    1. [Accessing Globals](#accessing-globals)
       1. [Server-Side Node.js Code](#server-side-nodejs-code)
       1. [Client-Side Code](#client-side-code)
-   1. [Using `require` In Node](#using-require-in-node)
+   1. [Using `require` In Node.js](#using-require-in-nodejs)
    1. [Using `parseInt`](#using-parseint)
    1. [Constructing and Raising Errors](#constructing-and-raising-errors)
    1. [Logging Errors](#logging-errors)
@@ -60,10 +61,10 @@ Copyright (C) <year> TeraLogics. All Rights Reserved.
 The value of `<year>` should be selected when the file is created. It is not necessary to update the value of year in the future.
 
 ### **`'use strict';`**
-Every file **SHOULD** have `'use strict';` before the first non-comment line. At a minimum, every outermost function scope **MUST** have `'use strict';` as the first
-non-comment line, or **MUST** be inheriting strict mode from the file. This statement places the ECMAScript 5 interpreter into
-[strict mode](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode). ECMAScript 6+ module code
-[is always executed in strict mode](http://www.ecma-international.org/ecma-262/6.0/#sec-strict-mode-code), but the `'use strict';` statement produces no negative effect.
+At a minimum, every outermost function scope **MUST** have `'use strict';` as the first non-comment line, or **MUST** be inheriting strict mode from the
+file. This statement places the ECMAScript 5 interpreter into [strict mode](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Strict_mode).
+ECMAScript 6+ module code [is always executed in strict mode](http://www.ecma-international.org/ecma-262/6.0/#sec-strict-mode-code), but the `'use strict';`
+statement produces no negative effect.
 
 For server-side JavaScript, this example is the boilerplate from which all files should be produced.
 
@@ -235,6 +236,20 @@ var toTerminate = _.find(employees, function (employee) {
 });
 ```
 
+#### **Private Functions In Modules**
+When writing functions for modules, whether they be server-side Node.js modules or client-side modules of some kind, the name of any function that is not exported from the module
+**MUST** be prefixed with an underscore (`_`).
+
+```js
+exports.getGreeting = function (name) {
+	return _formatGreeting(name);	
+};
+
+function _formatGreeting(name) {
+	return `Hello, ${name}, how are you today?`;
+}
+```
+
 ### **Accessing Globals**
 The global space **SHOULD** be used sparingly, but in some cases can greatly simplify code. In those cases, certain conventions can be used to improve readability and
 maintainability by making interactions with the global space explicit.
@@ -265,7 +280,7 @@ In this example, the file indicates that it expects the presence of two globals 
 /* exported Three, Four */
 ```
 
-### **Using `require` In Node**
+### **Using `require` In Node.js**
 Most of our applications define various globals for the absolute paths to the folders containing the files for application layers and libraries. When using `require` to import
 the code from files in those locations, [`path.join`](https://nodejs.org/api/path.html#path_path_join_path1_path2) **MUST** be used to provide the necessary path.
 
@@ -342,7 +357,7 @@ One of the issues that Promises are intended to solve is Callback Hell. In Callb
 asynchronous action requiring and handler and so on. It is perfectly possibly to transition nodeback-style code to Promise code while preserving Callback Hell.
 
 In the first example, nodebacks are simply replaced with promises, one-for-one. In the second example, the promises returned by `secondTask` and `thirdTask` are returned from the
-`then` function. Promises **MUST NOT** be structured in this way.
+`then` function. Promises **SHOULD NOT** be structured in this way.
 
 ```js
 firstTask().then(function () {
@@ -354,7 +369,7 @@ firstTask().then(function () {
 
 If a _value_ is returned from a `then` function, that value becomes the outer promise's resolution value. If a _promise_ is returned from a `then` function, its
 entire chain is inserted into the outer promise's chain at the location of the `then`. In this way, the next `then` will actually handle the result of the promise returned from
-the previous `then`, but on the outer level. Promises **MUST** be structured in this way.
+the previous `then`, but on the outer level. Promises **SHOULD** be structured in this way.
 
 ```js
 firstTask().then(function () {
@@ -638,7 +653,8 @@ converted to that type before it is assigned to the data tuple. In this example,
 URL was `/cars/15?extended=true`; it includes a car ID that is intended to be `Number` and an `extended` flag that is intended to be `Boolean`.
 
 ```js
-var carsDal = require(path.join(global.__dalsdir, 'cars'));
+var carsDal = require(path.join(global.__dalsdir, 'cars')),
+	validation = require('tl-validation');
 
 exports.get = function (req, res, next) {
 	var obj = {
@@ -675,8 +691,9 @@ The organization of the **Data Abstraction Layer** follows that of the **control
 Each function of this layer receives the tuple from the **controller** layer. The `carsDal.search` function, referenced above, might be defined like this:
 
 ```js
-var util = require('util'),
-	carsAdapter = require(path.join(global.__adaptersdir, 'cars'));
+var carsAdapter = require(path.join(global.__adaptersdir, 'cars')),
+	util = require('util'),
+	validation = require('tl-validation');
 
 exports.search = function (obj) {
 	return validation.parameters(function () {  // start the promise chain and validate

@@ -924,6 +924,11 @@ conditional logic based on the presence or absence of that record. The value of 
 should be returned from the **adapter** layer and passed up through the **DAL** layer. In the **controller** layer, the absence of a record matching the criteria should finally
 be translated into a not-found error.
 
+The **controller** layer is where the error **MUST** be generated because it is not _intrinsically_ an error case for nothing to be found. It is a choice of the form and structure
+of our service stack implementation that our REST services should return an `HTTP 404` when no record matches a unique identifier; the **controller** layer is the effective
+implementation of our REST services, and so that is where the error must be raised. Additionally, if we generated these errors in the **DAL** layer or the **adapter** layer,
+we would be forced, in internal code consuming these layers, into using try/catch constructs as control of flow which **MUST NOT** be done.
+
 ```js
 // Controller layer
 exports.get = function (req, res, next) {

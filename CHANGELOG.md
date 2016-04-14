@@ -2,6 +2,10 @@
 
 [Back to **Coding Standards and Practices**](https://github.com/TeraLogics/coding-standards/blob/master/coding-standards.md)
 
+## 2016-04-14
+* Updated **Empty Result vs. Not Found**.
+  * Added rationale for why not-found errors must be generated in the controller layer.
+
 ## 2016-04-12
 * Added **Private Functions In Modules**.
 * Renamed **Using `require` In Node** to **Using `require` In Node.js**.

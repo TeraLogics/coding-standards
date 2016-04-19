@@ -1,4 +1,4 @@
-Copyright (c) 2016 TeraLogics, LLC, a Cubic Company
+Copyright (c) 2016 TeraLogics, LLC
 
 This work is licensed under Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International.
 

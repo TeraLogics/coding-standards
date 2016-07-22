@@ -27,7 +27,7 @@ provide examples of how such constructs should be used in practice.
    1. [Logging Errors](#logging-errors)
    1. [Promises](#promises)
       1. [Promise Structure](#promise-structure)
-      1. [The Promise Constructor vs. The Deferred Pattern](#the-promise-constructor-vs-the-deferred-pattern)
+      1. [Promisification Options and The Deferred Pattern](#promisification-options-and-the-deferred-pattern)
          1. [The Explicit Construction Anti-Pattern](#the-explicit-construction-anti-pattern)
       1. [Starting a Promise Chain](#starting-a-promise-chain)
 1. [Application Layers](#application-layers)
@@ -428,32 +428,77 @@ p1().then(function () {
 })
 ```
 
-#### **The Promise Constructor vs. The Deferred Pattern**
+#### **Promisification Options and The Deferred Pattern**
 When interacting with asynchronous code outside of your control, it may be necessary to translate some sort of callback-based asynchrony to promises in order to integrate
-it with the rest of an application's code. In this case, there are two main possibilities:
+it with the rest of an application's code; this is called ["promisification"](http://bluebirdjs.com/docs/api/promisification.html). To do this, there are three main possibilities
+that **SHOULD** be used in most cases:
 
-* Using [`promisify`](http://bluebirdjs.com/docs/api/promise.promisify.html) or [`promisifyAll`](http://bluebirdjs.com/docs/api/promise.promisifyall.html). In many cases, these two
-  utilities will be sufficient translators.
-* Manual translation using the Promise constructor.
+* Using [`promisify`](http://bluebirdjs.com/docs/api/promise.promisify.html) or [`promisifyAll`](http://bluebirdjs.com/docs/api/promise.promisifyall.html).   
+  _These should be used in cases where there is a readily-accessible callback-based function to translate._
+* Using [`fromCallback`](http://bluebirdjs.com/docs/api/promise.fromcallback.html).   
+  _This should be used in cases where the callback-based function is not readily accessible, but will_ become _accessible during execution._
+* Manual translation using the [Promise constructor](http://bluebirdjs.com/docs/api/new-promise.html).   
+  _This should be used in cases where neither of the above methods work._
 
-In this example, a callback-based library call is translated using a wrapper function that exposes its functionality to the application code as a promise.
+In this example, the `promisify` utility is used to generate a function that returns a promise. This is possible because the function `getWeather` is exposed directly
+on the module **weather-lib**.
 
 ```js
-function getWeather() {
-	return new Promise(function (resolve, reject) {
-		weatherlib.getWeather(function (err, weather) {
-			if (err) {
-				return reject(err);			
-			}
-			
-			resolve(err);
-		});	
-	});
-}
+const weatherLib = require('weather-lib');
+
+const getWeather = Promise.promisify(weatherLib.getWeather);
+
+exports.getWeather = function (zipcode) {
+	return getWeather(zipcode);
+};
 ```
 
-In code examples, you may see a `deferred` object being used for this kind of translation. This pattern is deprecated and **MUST NOT** be used. The Promise constructor **MUST** be
-used in its place.
+In this example, the `fromCallback` utility is used to generate a function that returns a promise. `promisify` cannot be used, because the library requires an intermediate step before
+the function that _would_ be promisified is exposed.
+
+```js
+const weatherLib = require('weather-lib');
+
+exports.getWeather = function (region, zipcode) {
+	return Promise.fromCallback(function (callback) {
+		// Setting the region exposes the weather-getter function for that region.
+		return weatherLib.useRegion(region).getWeather(zipcode, callback);
+	});
+};
+```
+
+In this example, Promise constructor is used to generate a function that returns a promise. Neither `promisify` nor `fromCallback` can be used because the library exposes information
+using an [EventEmitter](https://nodejs.org/api/events.html#events_class_eventemitter).
+
+```js
+const weatherLib = require('weather-lib');
+
+exports.getWeather = function (zipcode, nearbyMiles) {
+	return new Promise(function (resolve, reject) {
+		// Create a finder that pulls weather information for some miles around a zipcode.
+		let finder = weatherLib.createZoneFinder(zipcode, nearbyMiles),
+			weather = [];
+		
+		finder.on('weather', function (data) {
+			// Each time new weather info comes in, add it to the list.
+			weather.push(data);
+		});
+		
+		finder.on('end', function () {
+			// When we're done, resolve with the whole list.
+			resolve(weather);
+		});
+		
+		finder.on('error', function (err) {
+			// Reject if we get an error.
+			reject(err);
+		});
+	});
+};
+```
+
+In some code examples, you may see a `deferred` object being used for this kind of translation. This pattern is deprecated and **MUST NOT** be used. Either one of the methods, above, or
+another supported method in **bluebird** **MUST** be used in its place.
 
 ##### **The Explicit Construction Anti-Pattern**
 In this example, the deprecated deferred pattern is used to interact with an inner promise.
@@ -904,9 +949,11 @@ exports.search = function (req, res, next) {
 
 // DAL layer
 exports.search = function (obj) {
-	// validation omitted
-
-	return carsAdapter.search(obj);
+	return validation.parameters(function () {
+		// validate parameters
+	}).then(function () {
+		return carsAdapter.search(obj);	
+	});	
 };
 
 // Adapter layer
@@ -932,8 +979,18 @@ we would be forced, in internal code consuming these layers, into using try/catc
 ```js
 // Controller layer
 exports.get = function (req, res, next) {
-	carsDal.get({
-		id: req.params.id
+	let obj = {
+		id: req.params.id	
+	}
+
+	validation.parameters(function () {
+		if (obj.id && !validation.int(obj.id)) {
+			return 'Invalid id; it must be an integer.';
+		} else {
+			obj.id = parseInt(obj.id, 10);
+		}
+	}).then(function () {
+		return carsDal.get(obj);	
 	}).then(function (car) {
 		if (!car) {
 			throw new TLError('Could not find car.', TLError.NotFound);
@@ -948,10 +1005,8 @@ exports.get = function (req, res, next) {
 // DAL layer
 exports.get = function (obj) {
 	return validation.parameters(function () {
-		if (!obj.id || !validation.int(obj.id)) {
+		if (!_.isFinite(obj.id)) {
 			return 'Invalid id; it must be an integer.';
-		} else {
-			obj.id = parseInt(obj.id, 10);
 		}
 	}).then(function () {
 		return carsAdapter.get(obj);

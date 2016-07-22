@@ -2,6 +2,15 @@
 
 [Back to **Coding Standards and Practices**](https://github.com/TeraLogics/coding-standards/blob/master/coding-standards.md)
 
+## 2016-07-22
+* Updated **The Promise Constructor vs. The Deferred Pattern**.
+  * Renamed to **Promisification Options and The Deferred Pattern**.
+  * Added `fromCallback` and improved examples.
+
+## 2016-04-14
+* Updated **Empty Result vs. Not Found**.
+  * Fixed code examples to actually follow our coding standards.
+
 ## 2016-04-14
 * Updated **Empty Result vs. Not Found**.
   * Added rationale for why not-found errors must be generated in the controller layer.

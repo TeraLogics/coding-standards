@@ -2,6 +2,10 @@
 
 [Back to **Coding Standards and Practices**](https://github.com/TeraLogics/coding-standards/blob/master/coding-standards.md)
 
+## 2017-02-03
+* Updated **Route Parameters and Query Parameters**.
+  * Changed layer requirements to only attempt to parse string values to their target type.
+
 ## 2016-07-22
 * Updated **The Promise Constructor vs. The Deferred Pattern**.
   * Renamed to **Promisification Options and The Deferred Pattern**.

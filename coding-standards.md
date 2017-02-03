@@ -693,9 +693,9 @@ As the direct handler for our routing system, as defined in the **route** layer,
 In a REST service, Route parameter (`/route/:param`) and query parameter (`/route?query=param`) values will always be strings. It is the responsibility of this layer to obfuscate
 or shield the lower layers from this implementation detail.
 
-At this layer, the data type compatibility of these kinds of parameters **MUST** be evaluated, and if the `String` value is compatible with the target type, it **MUST** be
-converted to that type before it is assigned to the data tuple. In this example, the controller's `get` function is handling a request for the route `/cars/:cid`. The full request
-URL was `/cars/15?extended=true`; it includes a car ID that is intended to be `Number` and an `extended` flag that is intended to be `Boolean`.
+At this layer, if parameters from these sources are provided, a conversion to the target type **MUST** be attempted. In this example, the controller's `get` function is handling
+a request for the route `/cars/:cid`. The full request URL was `/cars/15?extended=true`; it includes a car ID that is intended to be `Number` and an `extended` flag that is
+intended to be `Boolean`.
 
 ```js
 var carsDal = require(path.join(global.__dalsdir, 'cars')),
@@ -707,16 +707,12 @@ exports.get = function (req, res, next) {
 		extended: req.query.extended
 	};
 
-	validation.parameters(function () {
-		if (!obj.cid || !validation.int(obj.cid)) {
-			return 'Invalid cid; it must be an integer.';
-		} else {
+	validation.parameters(function () {		
+		if (obj.cid) {
 			obj.cid = parseInt(obj.cid, 10);
 		}
 		
-		if (obj.extended && obj.extended !== 'true' && obj.extended !== 'false') { // validation.boolean is too permissive for this
-			return 'Invalid extended; it must be a Boolean value.';
-		} else {
+		if (obj.extended && (obj.extended === 'true' || obj.extended === 'false')) {			
 			obj.extended = obj.extended === 'true';
 		}
 	}).then(function () {
@@ -728,8 +724,9 @@ exports.get = function (req, res, next) {
 };
 ```
 
-In _most_ cases, the **tl-validation** module can be used to determine type compatibility; in other cases, such as the case above, its functions may be too permissive for
-the specific check being performed. See the README on the **tl-validation** module repository for more information.
+It is _not_ necessary to evaluate the value for compatibility with the target type as long as the parsing methodology produces a value _in the failure case_ that is incompatible
+with the target type. For example, `parseInt('hello', 10);` will produce the value `NaN` which will fail the eventual evaluation by `_.isFinite` in the **DAL** layer. In the
+case of the `extended` flag, above, in the failure case, the string value would be passed through to the **DAL** layer which would fail the eventual evaluation  by `_.isBoolean`.
 
 ### **DAL** Layer
 The organization of the **Data Abstraction Layer** follows that of the **controller** layer. The **cars.js**, above, will have a corresponding **cars.js** in this layer.
